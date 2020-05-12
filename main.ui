@@ -10,6 +10,11 @@
     <height>494</height>
    </rect>
   </property>
+  <property name="font">
+   <font>
+    <pointsize>13</pointsize>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -48,7 +53,7 @@
      <enum>QTabWidget::Triangular</enum>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
     <property name="iconSize">
      <size>
@@ -305,7 +310,7 @@
        <enum>Qt::LeftToRight</enum>
       </property>
       <property name="text">
-       <string>Нерубащенкова</string>
+       <string>TextLabel</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -387,7 +392,8 @@
     </widget>
     <widget class="QWidget" name="tab_employees">
      <attribute name="icon">
-      <iconset theme="Lol"/>
+      <iconset theme="Lol">
+       <normaloff>.</normaloff>.</iconset>
      </attribute>
      <attribute name="title">
       <string>СОТРУДНИКИ</string>
@@ -508,11 +514,103 @@
      <attribute name="title">
       <string>Диалоги</string>
      </attribute>
+     <widget class="QListWidget" name="list_dialogs">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>10</y>
+        <width>751</width>
+        <height>461</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>15</pointsize>
+       </font>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::NoDragDrop</enum>
+      </property>
+      <property name="textElideMode">
+       <enum>Qt::ElideRight</enum>
+      </property>
+      <property name="viewMode">
+       <enum>QListView::ListMode</enum>
+      </property>
+      <property name="batchSize">
+       <number>100</number>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab_chat">
      <attribute name="title">
       <string>Чат</string>
      </attribute>
+     <widget class="QListWidget" name="listWidget_chat">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>40</y>
+        <width>741</width>
+        <height>331</height>
+       </rect>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
+      <property name="textElideMode">
+       <enum>Qt::ElideRight</enum>
+      </property>
+     </widget>
+     <widget class="QTextEdit" name="txt_message">
+      <property name="geometry">
+       <rect>
+        <x>100</x>
+        <y>380</y>
+        <width>511</width>
+        <height>71</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_send_message">
+      <property name="geometry">
+       <rect>
+        <x>620</x>
+        <y>390</y>
+        <width>111</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Отправить</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="lbl_FIO_chat">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>10</y>
+        <width>691</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>ФИО</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_file">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>377</y>
+        <width>81</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Файл</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>
