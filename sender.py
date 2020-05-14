@@ -1,18 +1,8 @@
 import requests
 
-print('Enter username:')
-username = input()
-print('Enter password')
-password = input()
-
-while True:
-    print('Enter message:')
-    text = input()
-
-    response = requests.post(
-        'https://127.0.0.1:5000/send',
-        json={"username": username, "password": password, "text": text}
-    )
-    if not response.json()['ok']:
-        print("Access denide")
-        break
+with open('widget_icon.png', 'rb') as f:
+    file = f.read()
+response = requests.get("http://127.0.0.1:5000/get_image")
+with open('icon.png', 'wb')as f:
+    f.write(response.content)
+print(response.content)
