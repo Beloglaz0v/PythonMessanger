@@ -25,19 +25,23 @@ class MessengerApp(QtWidgets.QMainWindow, auth_form.Ui_form_auth):
     def authorization(self):
         login = self.txt_login.text()
         passwd = self.txt_pass.text()
+        if not login or not passwd:
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Заполнены не все поля')
+            return
         response = requests.post(self.server + "/auth", json={"login": login, "password": passwd})
         data = response.json()
-        print(data, login, passwd)
+        print(data)
         if not data['login']:
-            print('Такого пользователя несуществует')
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Пользователь с таким\nлогином не найден')
         elif not data['password']:
-            print('Неправильный пароль')
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Неверный пароль')
         else:
             id = data['id']
             global main_window
             main_window = MessengerMainApp(id)
             main_window.show()
             self.hide()
+
 
 
 class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
@@ -47,15 +51,19 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
         self.server = 'http://127.0.0.1:5000'
         self.id = user_id
         self.personal_info = {}
+        self.all_employees = []
         self.employees = []
         self.list_of_employees()
+        self.cmbox_depnum.currentIndexChanged.connect(self.search_bydep)
         self.filling_1tab()
         self.filling_2tab()
         self.filling_3tab()
+        self.filling_depnum()
         self.tabWidget.currentChanged.connect(self.filling_3tab)
         self.list_dialogs.doubleClicked.connect(self.open_chat)
         self.tabWidget.setCurrentIndex(0)
         self.listWidget.doubleClicked.connect(self.addit_info)
+        self.btn_find.pressed.connect(self.find_employee)
         self.dialog_list = []
         self.dialog_id = -1
         self.count_unread = 0
@@ -70,7 +78,6 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
         if self.tabWidget.currentIndex() == 3 and self.dialog_id != -1:
             response = requests.post(self.server + "/new_messages", json={'dialog_id': self.dialog_id, 'time': self.last_message_time})
             data = response.json()['messages']
-            print(data)
             if data:
                     for el in data:
                         if int(el['dialog_id']) == self.dialog_id:
@@ -97,15 +104,41 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
     def setDialogid(self, id):
         self.dialog_id = int(id)
 
+    def search_bydep(self):
+        self.employees.clear()
+        dep_num = self.cmbox_depnum.currentText()
+        if dep_num != 'Все':
+            for el in self.all_employees:
+                if el['dep_num'] == int(dep_num):
+                    self.employees.append(el)
+        else:
+            self.employees = self.all_employees[:]
+        self.filling_2tab()
+
     def addit_info(self):
         dia = DialogInfo(self, self.employees[self.listWidget.currentRow()])
         dia.show()
         dia.exec_()
 
+    def find_employee(self):
+        self.employees.clear()
+        self.cmbox_depnum.setCurrentIndex(0)
+        self.cmbox_depnum.repaint()
+        surname = self.lineEdit_find.text()
+        for el in self.all_employees:
+            if surname.lower() == el['surname'].lower():
+                self.employees.append(el)
+        if self.employees:
+            self.filling_2tab()
+        else:
+            self.listWidget.clear()
+            self.listWidget.addItem("Сотрудников с фамилией " + surname + " не найдено")
 
     def open_chat(self):
         dia = self.dialog_list[self.list_dialogs.currentRow()]
-        dia['dialog_id']
+        self.lbl_FIO_chat.setText(f'{dia["surname"]} {dia["name"]}')
+        self.get_history(None, None, dia['dialog_id'])
+        self.tabWidget.setCurrentIndex(3)
 
     def list_of_employees(self):
         response = requests.get(self.server + "/getemployees")
@@ -114,7 +147,8 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
             if element['id'] == self.id:
                 self.personal_info = element
             else:
-                self.employees.append(element)
+                self.all_employees.append(element)
+        self.employees = self.all_employees[:]
 
     def filling_1tab(self):
         self.lbl_phone.setText(self.personal_info['phone_num'])
@@ -126,11 +160,18 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
         self.lbl_birthday.setText(self.personal_info['birthday'])
 
     def filling_2tab(self):
+        self.listWidget.clear()
         data = self.employees
         for el in data:
             dep = str(el["dep_num"]) if len(str(el["dep_num"])) == 2 else str(el["dep_num"])+'  '
             line = f'Одел №{dep} {el["surname"]} {el["name"]} {el["patronymic"]}'
             self.listWidget.addItem(line)
+
+    def filling_depnum(self):
+        items = set(str(el['dep_num']) for el in self.all_employees)
+        self.cmbox_depnum.addItem('Все')
+        print(items)
+        self.cmbox_depnum.addItems(items)
 
     def filling_3tab(self):
         self.list_dialogs.clear()
@@ -158,6 +199,28 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
                 gg.setTextAlignment(2)
                 self.listWidget_chat.addItem(gg)
 
+    def get_history(self, user1, user2, dialog_id):
+        response = requests.post(self.server + "/history",
+                                 json={'user1': user1,
+                                       'user2': user2,
+                                       'dialog_id': dialog_id
+                                       })
+        data = response.json()
+        print(data)
+        self.setDialogid(data['dialog_id'])
+        history = data['messages']
+        if history:
+            for el in history:
+                if el['user_id'] == self.id:
+                    line = f"{time.ctime(float(el['time']))}\n{el['message']} "
+                    gg = QtWidgets.QListWidgetItem(line)
+                    gg.setTextAlignment(2)
+                    self.listWidget_chat.addItem(gg)
+                else:
+                    line = f"{time.ctime(float(el['time']))}\n{el['message']}"
+                    QtWidgets.QListWidgetItem(line, self.listWidget_chat)
+            self.setLast_message_time(history[-1]['time'])
+
 
 class DialogInfo(QtWidgets.QDialog, dialog.Ui_Dialog):
     def __init__(self, main, employee):
@@ -184,27 +247,9 @@ class DialogInfo(QtWidgets.QDialog, dialog.Ui_Dialog):
         else:
             user1 = self.employee['id']
             user2 = self.main.id
-        print({'user1': user1,'user2': user2})
-        response = requests.post(self.main.server + "/history",
-                                 json={'user1': user1,
-                                       'user2': user2
-                                       })
-        data = response.json()
-        print(data)
-        self.main.setDialogid(data['dialog_id'])
-        history = data['messages']
-        if history:
-            for el in history:
-                if el['user_id'] == self.main.id:
-                    line = f"{time.ctime(float(el['time']))}\n{el['message']} "
-                    gg = QtWidgets.QListWidgetItem(line)
-                    gg.setTextAlignment(2)
-                    self.main.listWidget_chat.addItem(gg)
-                else:
-                    line = f"{time.ctime(float(el['time']))}\n{el['message']}"
-                    QtWidgets.QListWidgetItem(line, self.main.listWidget_chat)
-            self.main.setLast_message_time(history[-1]['time'])
+        self.main.get_history(user1, user2, None)
         self.close()
+
 
 
 if __name__ == '__main__':  # Если мы запускаем файл напрямую, а не импортируем

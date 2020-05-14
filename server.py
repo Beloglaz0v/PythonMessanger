@@ -18,12 +18,16 @@ def auth():
     password = data['password']
     for user in users:
         answer = {"id": False, "login": True, "password": True}
-        if user[1] != login:
+        print(user[1] == login)
+        if user[1] == login and user[2] == password:
+            answer["login"] = True
+            answer["id"] = user[0]
+            break
+        elif user[1] != login:
             answer["login"] = False
+            answer["password"] = False
         elif user[2] != password:
             answer["password"] = False
-        else:
-            answer["id"] = user[0]
             break
     conn.commit()
     conn.close()
@@ -102,32 +106,37 @@ def send():
 @app.route("/history", methods=['POST'])
 def history():
     data = request.json
-    print(data)
     answer = []
     conn = sqlite3.connect("messanger.db")
     cur = conn.cursor()
-    cur.execute(f"SELECT id FROM dialogs WHERE user_id = {data['user1']} and user2_id = {data['user2']}")
-    dialog = cur.fetchall()
-    if dialog:
-        cur.execute(f"SELECT * FROM messages WHERE dialog_id = {dialog[0][0]}")
-        history = cur.fetchall()
-        if history:
-            for messange in history:
-                mess = {
-                    "user_id": messange[1],
-                    "message": messange[2],
-                    "attachment": messange[3],
-                    "time": messange[4],
-                }
-                answer.append(mess)
-    else:
-        cur.execute(f'INSERT INTO "main"."dialogs" ("user_id", "user2_id") VALUES({data["user1"]}, {data["user2"]})')
+    if data['dialog_id'] is None:
         cur.execute(f"SELECT id FROM dialogs WHERE user_id = {data['user1']} and user2_id = {data['user2']}")
         dialog = cur.fetchall()
-        answer = {}
+        if dialog:
+            dialog_id = dialog[0][0]
+        else:
+            cur.execute(
+                f'INSERT INTO "main"."dialogs" ("user_id", "user2_id") VALUES({data["user1"]}, {data["user2"]})')
+            cur.execute(f"SELECT id FROM dialogs WHERE user_id = {data['user1']} and user2_id = {data['user2']}")
+            dialog = cur.fetchall()
+            dialog_id = dialog[0][0]
+            answer = {}
+    else:
+        dialog_id = data['dialog_id']
+    cur.execute(f"SELECT * FROM messages WHERE dialog_id = {dialog_id}")
+    history = cur.fetchall()
+    if history:
+        for messange in history:
+            mess = {
+                "user_id": messange[1],
+                "message": messange[2],
+                "attachment": messange[3],
+                "time": messange[4],
+            }
+            answer.append(mess)
     conn.commit()
     conn.close()
-    return {'messages': answer, 'dialog_id': dialog[0][0]}
+    return {'messages': answer, 'dialog_id': dialog_id}
 
 
 @app.route("/new_messages", methods=['POST'])
