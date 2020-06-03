@@ -1,7 +1,9 @@
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 import time
 import datetime
 import sqlite3
+import os
+import json
 
 app = Flask(__name__)
 
@@ -34,26 +36,6 @@ def auth():
     return answer
 
 
-# @app.route("/getinfo", methods=['POST'])
-# def personalinfo():
-#     id = request.json['id']
-#     conn = sqlite3.connect("messanger.db")
-#     cur = conn.cursor()
-#     cur.execute(f"SELECT * FROM users WHERE id = {int(id)}")
-#     info = cur.fetchall()[0]
-#     conn.commit()
-#     conn.close()
-#     answer = {'phone_num': info[3],
-#               'email': info[4],
-#               'dep_num': info[5],
-#               'surname': info[6],
-#               'name': info[7],
-#               'patronymic': info[8],
-#               'birthday': info[9],
-#               }
-#     return answer
-
-
 @app.route("/getemployees")
 def allpersonalinfo():
     answer = []
@@ -76,15 +58,51 @@ def allpersonalinfo():
     return {'employees': answer}
 
 
-@app.route("/send", methods=['POST'])
-def send():
-
+@app.route("/get_file", methods=['POST'])
+def get_file():
     data = request.json
     print(data)
+    id = data['file_id']
+    conn = sqlite3.connect("messanger.db")
+    cur = conn.cursor()
+    cur.execute(f'SELECT * FROM Files WHERE file_id ={int(id)}')
+    file_name = cur.fetchall()[0][1]
+    conn.commit()
+    conn.close()
+    print(file_name)
+    return send_from_directory('files/' + str(id), file_name)
+
+
+@app.route("/send_file", methods=['POST'])
+def send_file():
+    file = request.files['file']
+    data = json.loads(request.form['data'])
+    print(data)
+    user_id = data['user']
+    dialog_id = data['dialog_id']
+    if file:
+        conn = sqlite3.connect("messanger.db")
+        cur = conn.cursor()
+        cur.execute(f'SELECT MAX(file_id) FROM Files')
+        id = cur.fetchall()[0][0] + 1
+        file_path = 'files/' + str(id)
+        file_name = file.filename
+        cur.execute(f'INSERT INTO "main"."files" ("file_id", "file") VALUES ({int(id)}, \'{file_name}\')')
+        os.mkdir(file_path)
+        file.save(os.path.join(file_path, file_name))
+        cur.execute(f'INSERT INTO "main"."messages" ("dialog_id", "user_id", "attachment", "timedate")'
+                    f' VALUES({dialog_id}, {user_id}, {id}, \'{time.time()}\')')
+        conn.commit()
+        conn.close()
+    return 'ok'
+
+
+@app.route("/send", methods=['POST'])
+def send():
+    data = request.json
     user_id = data['user']
     text = data['message']
     dialog_id = data['dialog_id']
-    print(data)
     try:
         conn = sqlite3.connect("messanger.db")
         cur = conn.cursor()
@@ -97,9 +115,7 @@ def send():
         conn.close()
         print('norm')
         return {'ok': True}
-
     except Exception as ex:
-        print(ex)
         return {'ok': False}
 
 
@@ -123,19 +139,33 @@ def history():
             answer = {}
     else:
         dialog_id = data['dialog_id']
-    cur.execute(f"SELECT * FROM messages WHERE dialog_id = {dialog_id}")
+    cur.execute(f"SELECT * FROM messages WHERE dialog_id = {dialog_id} order by timedate")
     history = cur.fetchall()
     if history:
         for messange in history:
-            mess = {
-                "user_id": messange[1],
-                "message": messange[2],
-                "attachment": messange[3],
-                "time": messange[4],
-            }
+            if messange[3]:
+                cur.execute(f"SELECT * FROM files WHERE file_id = {messange[3]}")
+                attachment = cur.fetchall()[0]
+                mess = {
+                    "dialog_id": messange[0],
+                    "user_id": messange[1],
+                    "message": messange[2],
+                    "attachment": attachment[1],
+                    "attachment_id": attachment[0],
+                    "time": messange[4],
+                }
+            else:
+                mess = {
+                    "dialog_id": messange[0],
+                    "user_id": messange[1],
+                    "message": messange[2],
+                    "attachment": None,
+                    "time": messange[4],
+                }
             answer.append(mess)
     conn.commit()
     conn.close()
+    print(answer)
     return {'messages': answer, 'dialog_id': dialog_id}
 
 
@@ -152,14 +182,27 @@ def new_messages():
     messages = cur.fetchall()
     if messages:
         for message in messages:
-            mess = {
+            if message[3]:
+                cur.execute(f"SELECT * FROM files WHERE file_id = {message[3]}")
+                attachment = cur.fetchall()[0]
+                mess = {
                     "dialog_id": message[0],
                     "user_id": message[1],
                     "message": message[2],
-                    "attachment": message[3],
+                    "attachment": attachment[1],
+                    "attachment_id": attachment[0],
                     "time": message[4],
-            }
+                }
+            else:
+                mess = {
+                    "dialog_id": message[0],
+                    "user_id": message[1],
+                    "message": message[2],
+                    "attachment": None,
+                    "time": message[4],
+                }
             answer.append(mess)
+    print(answer)
     return {'messages': answer}
 
 
@@ -181,16 +224,62 @@ def get_dialogs():
     on messages.dialog_id = x.dialog_id 
     group by messages.dialog_id""")
     dialogs = cur.fetchall()
+    conn.commit()
+    conn.close()
     if dialogs:
         for dialog in dialogs:
             dia = {
-                    "dialog_id": dialog[0],
-                    "message": dialog[1],
-                    "name": dialog[2],
-                    "surname": dialog[3],
-                    "time": dialog[4],
+                "dialog_id": dialog[0],
+                "message": dialog[1],
+                "name": dialog[2],
+                "surname": dialog[3],
+                "time": dialog[4],
             }
             answer.append(dia)
     return {'dialogs': answer}
+
+
+@app.route("/update_info", methods=['POST'])
+def update_info():
+    data = request.json
+    conn = sqlite3.connect("messanger.db")
+    cur = conn.cursor()
+    cur.execute(f"UPDATE users "
+                f"SET name = '{data['name']}', surname = '{data['surname']}', patronymic = '{data['patronymic']}', dep_num = {data['dep_num']}, phone_num = '{data['phone_num']}', email = '{data['email']}', birthday = '{data['birthday']}' "
+                f"WHERE id = {data['id']}")
+    cur.execute(f"SELECT * FROM users WHERE id = {data['id']}")
+    info = cur.fetchall()[0]
+    answer = {'phone_num': info[3],
+              'email': info[4],
+              'dep_num': info[5],
+              'surname': info[6],
+              'name': info[7],
+              'patronymic': info[8],
+              'birthday': info[9],
+              'id': info[0],
+              }
+    conn.commit()
+    conn.close()
+    return {'info': answer}
+
+
+@app.route("/update_pass", methods=['POST'])
+def update_pass():
+    data = request.json
+    conn = sqlite3.connect("messanger.db")
+    cur = conn.cursor()
+    cur.execute(f"SELECT password FROM users WHERE id = {data['id']}")
+    passwd = cur.fetchall()[0][0]
+    print(passwd)
+    if passwd == data['old_pass']:
+        cur.execute(f"UPDATE users "
+                    f"SET password = '{data['new_pass']}' "
+                    f"WHERE id = {data['id']}")
+    else:
+        return {'ok': False}
+    conn.commit()
+    conn.close()
+    return {'ok': True}
+
 
 app.run()
