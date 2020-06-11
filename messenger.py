@@ -197,13 +197,13 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
         surname = self.lineEdit_find.text()
         self.employees.clear()
         for el in self.all_employees:
-            if surname.lower() == el['surname'].lower():
+            if surname.lower() in el['surname'].lower() or surname.lower() in el['name'].lower() or surname.lower() in el['patronymic'].lower():
                 self.employees.append(el)
         if self.employees:
             self.filling_2tab()
         else:
             self.listWidget.clear()
-            self.listWidget.addItem("Сотрудников с фамилией " + surname + " не найдено")
+            self.listWidget.addItem("Сотрудники не найдены")
 
     def open_chat(self):
         self.listWidget_chat.clear()

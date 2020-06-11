@@ -14,6 +14,13 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(747, 494)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
+        MainWindow.setSizePolicy(sizePolicy)
+        MainWindow.setMinimumSize(QtCore.QSize(747, 494))
+        MainWindow.setMaximumSize(QtCore.QSize(747, 494))
         font = QtGui.QFont()
         font.setPointSize(13)
         MainWindow.setFont(font)
@@ -129,7 +136,7 @@ class Ui_MainWindow(object):
         self.lbl_surname.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.lbl_surname.setObjectName("lbl_surname")
         self.lbl_email = QtWidgets.QLabel(self.tab_PersonalPage)
-        self.lbl_email.setGeometry(QtCore.QRect(290, 243, 291, 20))
+        self.lbl_email.setGeometry(QtCore.QRect(290, 242, 291, 21))
         font = QtGui.QFont()
         font.setFamily("PT Serif")
         font.setPointSize(18)
@@ -235,7 +242,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Мессенджер"))
         self.lbl_surname1.setText(_translate("MainWindow", "Фамилия"))
         self.lbl_name1.setText(_translate("MainWindow", "Имя"))
         self.lbl_patr1.setText(_translate("MainWindow", "Отчество"))
@@ -255,7 +262,7 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_PersonalPage), _translate("MainWindow", "ЛИЧНЫЙ КАБИНЕТ"))
         self.label.setText(_translate("MainWindow", "Поиск по отделу"))
         self.btn_find.setText(_translate("MainWindow", "Найти"))
-        self.label_2.setText(_translate("MainWindow", "Поиск по фамилии"))
+        self.label_2.setText(_translate("MainWindow", "Поиск по ФИО"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_employees), _translate("MainWindow", "СОТРУДНИКИ"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_dialogs), _translate("MainWindow", "Диалоги"))
         self.btn_send_message.setText(_translate("MainWindow", "Отправить"))
