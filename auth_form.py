@@ -22,6 +22,7 @@ class Ui_form_auth(object):
         self.txt_login.setObjectName("txt_login")
         self.txt_pass = QtWidgets.QLineEdit(form_auth)
         self.txt_pass.setGeometry(QtCore.QRect(20, 120, 251, 21))
+        self.txt_pass.setEchoMode(QtWidgets.QLineEdit.Password)
         self.txt_pass.setObjectName("txt_pass")
         self.label = QtWidgets.QLabel(form_auth)
         self.label.setGeometry(QtCore.QRect(30, 30, 60, 16))

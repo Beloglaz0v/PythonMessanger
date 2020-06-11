@@ -106,3 +106,4 @@ class Ui_Dialog(object):
         self.lbl_email1.setText(_translate("Dialog", "E-mail"))
         self.lbl_patr1.setText(_translate("Dialog", "Отчество"))
         self.lbl_name1.setText(_translate("Dialog", "Имя"))
+        self.lineEdit_phone.setInputMask(_translate("Dialog", "+7(000) 000-0000"))

@@ -368,6 +368,7 @@ def update_info():
     conn.close()
     return {'info': answer}
 
+
 """
 update_pass() - функция изменяющая пароль.
 Локальные переменные:

@@ -28,6 +28,7 @@ import json
 import os
 import datetime
 import changepass_form
+import re
 
 """
 MessengerApp() - класс для работы с формой авторизации.
@@ -85,9 +86,6 @@ MessengerMainApp() - класс для работы с основной форм
     download() - скачивание выбранного файла;
     choose_file() - отправка файла;
     getUpdates() - получение новых сообщений;
-    setLast_message_time() - установка времени последнего сообзения;
-    setdiaologs_list() - установка списка диалогов;
-    setDialogid() - установка айди открытого чата;
     search_bydep() - поиск по отделу;
     addit_info() - дополнительная информация о сотруднике;
     find_employee() - поиск сотрудников по фамилии;
@@ -129,7 +127,6 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
         self.cmbox_depnum.currentIndexChanged.connect(self.search_bydep)
         self.dialog_list = []
         self.dialog_id = -1
-        self.count_unread = 0
         self.last_message_time = 0
         self.btn_send_message.pressed.connect(self.send_message)
         self.timer = QtCore.QTimer()
@@ -176,15 +173,6 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
                 self.output_messages(data)
                 self.listWidget_chat.repaint()
                 self.last_message_time = float(data[-1]['time'])
-
-    def setLast_message_time(self, time):
-        self.last_message_time = float(time)
-
-    def setdiaologs_list(self, list):
-        self.dialog_list = list
-
-    def setDialogid(self, id):
-        self.dialog_id = int(id)
 
     def search_bydep(self):
         self.employees.clear()
@@ -262,7 +250,8 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
         self.list_dialogs.clear()
         response = requests.post(self.server + '/get_dialogs', json={'user': self.id})
         dialogs = response.json()['dialogs']
-        self.setdiaologs_list(dialogs)
+        #self.setdiaologs_list(dialogs)
+        self.dialog_list = dialogs[:]
         if dialogs:
             for dialog in dialogs:
                 if dialog['message'] is None:
@@ -294,8 +283,7 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
                                        'dialog_id': dialog_id
                                        })
         data = response.json()
-        print(data)
-        self.setDialogid(data['dialog_id'])
+        self.dialog_id = int(data['dialog_id'])
         history = data['messages']
         if history:
             self.files_inchat.clear()
@@ -372,26 +360,38 @@ class FormChangeInfo(QtWidgets.QDialog, changeinfo.Ui_Dialog):
         self.lineEdit_name.setText(self.personal_info['name'])
         self.lineEdit_surname.setText(self.personal_info['surname'])
         self.lineEdit_patronymic.setText(self.personal_info['patronymic'])
-        self.lineEdit_phone.setText(self.personal_info['phone_num'])
+        print(type(self.personal_info['phone_num']))
+        self.lineEdit_phone.setText(self.personal_info['phone_num'][1:])
         self.lineEdit_email.setText(self.personal_info['email'])
         self.dateEdit.setDate(datetime.datetime.strptime(self.personal_info['birthday'], '%d.%m.%Y'))
 
     def save_new_info(self):
-        self.new_info['dep_num'] = self.lineEdit_depnum.text()
-        self.new_info['name'] = self.lineEdit_name.text()
-        self.new_info['surname'] = self.lineEdit_surname.text()
-        self.new_info['patronymic'] = self.lineEdit_patronymic.text()
-        self.new_info['phone_num'] = self.lineEdit_phone.text()
-        self.new_info['email'] = self.lineEdit_email.text()
-        self.new_info['birthday'] = self.dateEdit.text()
-        response = requests.post(self.server + '/update_info', json=self.new_info)
-        data = response.json()
-        if data:
-            self.main.personal_info = data['info']
-            self.main.filling_1tab()
-            self.close()
+        if not re.fullmatch(r'[^\d\s\W]{2,20}', self.lineEdit_name.text()):
+            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Поле имя заполнено\nневерно')
+        elif not re.fullmatch(r'[^\d\s\W]{2,20}', self.lineEdit_surname.text()):
+            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Поле фамилия заполнено\nневерно')
+        elif not re.fullmatch(r'[^\d\s\W]{2,20}', self.lineEdit_patronymic.text()):
+            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Поле отчество заполнено\nневерно')
+        elif not  re.fullmatch(r'\d{1,3}', self.lineEdit_depnum.text()):
+            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Поле отдел заполнено\nневерно')
+        elif not re.fullmatch(r'[^@ ]+@([^@\.\W]+\.)+[^@\.]+', self.lineEdit_email.text()):
+            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Поле e-mail заполнено\nневерно')
         else:
-            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Произошла ошибка\nпопробуйте еще раз')
+            self.new_info['dep_num'] = self.lineEdit_depnum.text()
+            self.new_info['name'] = self.lineEdit_name.text()
+            self.new_info['surname'] = self.lineEdit_surname.text()
+            self.new_info['patronymic'] = self.lineEdit_patronymic.text()
+            self.new_info['phone_num'] = ''.join(re.findall(r'\d', self.lineEdit_phone.text()))
+            self.new_info['email'] = self.lineEdit_email.text()
+            self.new_info['birthday'] = self.dateEdit.text()
+            response = requests.post(self.server + '/update_info', json=self.new_info)
+            data = response.json()
+            if data:
+                self.main.personal_info = data['info']
+                self.main.filling_1tab()
+                self.close()
+            else:
+                QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Произошла ошибка\nпопробуйте еще раз')
 
 
 """
@@ -415,7 +415,11 @@ class ChangePassword(QtWidgets.QDialog, changepass_form.Ui_Dialog):
 
     def save_new_pass(self):
         new_pass = self.lineEdit_newpass1.text()
-        if new_pass == self.lineEdit_newpass2.text():
+        if len(new_pass) < 3:
+            QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Пароль должен содержать\nминимум 4 символа')
+            self.lineEdit_newpass1.clear()
+            self.lineEdit_newpass2.clear()
+        elif new_pass == self.lineEdit_newpass2.text():
             self.new['old_pass'] = self.lineEdit_oldpass.text()
             self.new['new_pass'] = new_pass
             response = requests.post(self.server + '/update_pass', json=self.new)
@@ -476,3 +480,4 @@ if __name__ == '__main__':
     window = MessengerApp()
     window.show()
     app.exec_()
+
