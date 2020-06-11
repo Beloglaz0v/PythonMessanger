@@ -1,13 +1,44 @@
+"""
+Выпускная квалификационная работа (дипломный проект),
+по теме "Разработка программы обмена информацией внутри предприятия"
+Название: Server.
+Разработал: Белоглазов Даниил Александрович, группа ТМП-81.
+Дата и номер версии: 26.05.2020 v2.1.
+Язык: Python.
+Краткое описание:
+Данная программа обеспечивает обмен информацией разного вида
+между сотрудниками предприятия.
+Функции используемые в программе:
+auth() - авторизация;
+allpersonalinfo() - информация о пользователях;
+get_file() - отправка файла;
+send_file() - получение файла;
+send() - обработка сообщения;
+history() - история сообщений;
+new_messages() - новые сообщения;
+get_dialogs() - список диалогов;
+update_info() - изменение личной информации;
+update_pass() - изменение пароля.
+"""
 from flask import Flask, request, send_from_directory
 import time
-import datetime
 import sqlite3
 import os
 import json
 
 app = Flask(__name__)
 
-
+"""
+auth() - функция авторизации.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    users - список пользователей;
+    login - логин;
+    password - пароль;
+    answer - ответ клиенту.
+"""
 @app.route("/auth", methods=['POST'])
 def auth():
     conn = sqlite3.connect("messanger.db")
@@ -15,12 +46,10 @@ def auth():
     cur.execute(f"SELECT id, login, password FROM users")
     users = cur.fetchall()
     data = request.json
-    print(data)
     login = data['login']
     password = data['password']
     for user in users:
         answer = {"id": False, "login": True, "password": True}
-        print(user[1] == login)
         if user[1] == login and user[2] == password:
             answer["login"] = True
             answer["id"] = user[0]
@@ -36,6 +65,14 @@ def auth():
     return answer
 
 
+"""
+allpersonalinfo() - информация о пользователях.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    info - список информации о пользователях;
+    answer - ответ клиенту.
+"""
 @app.route("/getemployees")
 def allpersonalinfo():
     answer = []
@@ -58,10 +95,18 @@ def allpersonalinfo():
     return {'employees': answer}
 
 
+"""
+get_file() - отправка файла.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    id - айди файла;
+    file_name - имя файла.
+"""
 @app.route("/get_file", methods=['POST'])
 def get_file():
     data = request.json
-    print(data)
     id = data['file_id']
     conn = sqlite3.connect("messanger.db")
     cur = conn.cursor()
@@ -69,15 +114,27 @@ def get_file():
     file_name = cur.fetchall()[0][1]
     conn.commit()
     conn.close()
-    print(file_name)
     return send_from_directory('files/' + str(id), file_name)
 
 
+"""
+send_file() - получение файла.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    file - файл;
+    user_id - айди пользователя;
+    dialog_id - айди диалога;
+    id - айди файла;
+    file_path - путь к файлу;
+    file_name - имя файла;
+    answer - ответ клиенту.
+"""
 @app.route("/send_file", methods=['POST'])
 def send_file():
     file = request.files['file']
     data = json.loads(request.form['data'])
-    print(data)
     user_id = data['user']
     dialog_id = data['dialog_id']
     if file:
@@ -96,7 +153,17 @@ def send_file():
         conn.close()
     return 'ok'
 
-
+"""
+send() - обработка сообщения.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    text - текст сообщения;
+    dialog_id - айди диалога;
+    user_id - айди пользователя;
+    answer - ответ клиенту.
+"""
 @app.route("/send", methods=['POST'])
 def send():
     data = request.json
@@ -106,19 +173,28 @@ def send():
     try:
         conn = sqlite3.connect("messanger.db")
         cur = conn.cursor()
-        print('norm')
         cur.execute(f'INSERT INTO "main"."messages" ("dialog_id", "user_id", "message", "timedate")'
                     f' VALUES({dialog_id}, {user_id}, \'{text}\', \'{time.time()}\')')
-
-        print('norm')
         conn.commit()
         conn.close()
-        print('norm')
         return {'ok': True}
     except Exception as ex:
         return {'ok': False}
 
 
+"""
+history() - функция возвращающая историю сообщений.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    dialog - информация о диалоге;
+    dialog_id - айди диалога;
+    history - история сообщений
+    attachment - вложения сообщения;
+    messange - сообщение;
+    answer - ответ клиенту.
+"""
 @app.route("/history", methods=['POST'])
 def history():
     data = request.json
@@ -165,14 +241,25 @@ def history():
             answer.append(mess)
     conn.commit()
     conn.close()
-    print(answer)
     return {'messages': answer, 'dialog_id': dialog_id}
 
 
+"""
+new_messages() - функция возвращающая новые сообщения.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    last_message_time - время последнего сообщения;
+    dialog_id - айди диалога;
+    messages - список сообщений;
+    attachment - вложения сообщения;
+    message - сообщение;
+    answer - ответ клиенту.
+"""
 @app.route("/new_messages", methods=['POST'])
 def new_messages():
     data = request.json
-    print(data)
     dialog_id = data['dialog_id']
     last_message_time = data['time']
     answer = []
@@ -206,6 +293,16 @@ def new_messages():
     return {'messages': answer}
 
 
+"""
+get_dialogs() - функция возвращающая список диалогов.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    dialogs - список диалогов;
+    dia - новое сформированное сообщение;
+    answer - ответ клиенту.
+"""
 @app.route("/get_dialogs", methods=['POST'])
 def get_dialogs():
     data = request.json
@@ -239,6 +336,15 @@ def get_dialogs():
     return {'dialogs': answer}
 
 
+"""
+update_info() - функция изменяющая личную информацию.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    info - данные пользователя;
+    answer - ответ клиенту.
+"""
 @app.route("/update_info", methods=['POST'])
 def update_info():
     data = request.json
@@ -262,7 +368,14 @@ def update_info():
     conn.close()
     return {'info': answer}
 
-
+"""
+update_pass() - функция изменяющая пароль.
+Локальные переменные:
+    conn - подключение к бд;
+    cur - переменная для осуществления запросов к бд;
+    data - данные полученные от клиента;
+    passwd - парол.
+"""
 @app.route("/update_pass", methods=['POST'])
 def update_pass():
     data = request.json
@@ -270,7 +383,6 @@ def update_pass():
     cur = conn.cursor()
     cur.execute(f"SELECT password FROM users WHERE id = {data['id']}")
     passwd = cur.fetchall()[0][0]
-    print(passwd)
     if passwd == data['old_pass']:
         cur.execute(f"UPDATE users "
                     f"SET password = '{data['new_pass']}' "

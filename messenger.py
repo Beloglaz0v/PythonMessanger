@@ -1,3 +1,21 @@
+"""
+Выпускная квалификационная работа (дипломный проект),
+по теме "Разработка программы обмена информацией внутри предприятия"
+Название: Messenger.
+Разработал: Белоглазов Даниил Александрович, группа ТМП-81.
+Дата и номер версии: 26.05.2020 v2.1.
+Язык: Python.
+Краткое описание:
+Данная программа обеспечивает обмен информацией разного вида
+между сотрудниками предприятия.
+Используемые классы в программе:
+MessangerApp - класс для работы с формой авторизации пользователя;
+MessangerMainApp - класс для работы с основной формой программы;
+FormChangeInfo - класс для работы с формой редактирования личной информации;
+ChangePassword - класс для работы с формой изменения пароля;
+DialogInfo - класс для работы с  формой дополнительной информации о сотруднике.
+
+"""
 import sys  # sys нужен для передачи argv в QApplication
 from PyQt5 import QtWidgets, QtCore, QtGui
 import auth_form
@@ -11,11 +29,18 @@ import os
 import datetime
 import changepass_form
 
+"""
+MessengerApp() - класс для работы с формой авторизации.
+Назначение поля класса:
+    server - ссылка на сервер.
+Назначения метода класса:
+    authorization() - авторизация пользователя.
 
+"""
 class MessengerApp(QtWidgets.QMainWindow, auth_form.Ui_form_auth):
     def __init__(self):
         super().__init__()
-        self.setupUi(self)  # Это нужно для инициализации нашего дизайна
+        self.setupUi(self)  # Инициализация дизайна
         self.btn_auth.pressed.connect(self.authorization)
         self.server = 'http://127.0.0.1:5000'
 
@@ -39,7 +64,44 @@ class MessengerApp(QtWidgets.QMainWindow, auth_form.Ui_form_auth):
             main_window.show()
             self.hide()
 
-
+"""
+MessengerMainApp() - класс для работы с основной формой программы.
+Формальный параметр:
+    user_id - айди пользователя.
+Назначение поля класса:
+    server - ссылка на сервер;
+    id - айди пользователя;
+    personal_info - личная информация о пользователе;
+    all_employees - список всех сотрудников;
+    files_inchat - список файлов в открытом чате;
+    employees - результат выборки по сотрудникам;
+    dialog_list - список диалогов пользователя;
+    dialog_id - айди открытого чата;
+    last_message_time - время последнего сообщения;
+    last_date - последняя дата сообщений.
+Назначения методов класса:
+    change_pass() - открытие окна изменения пароля;
+    change_info() - открытие окна редактирования информации;
+    download() - скачивание выбранного файла;
+    choose_file() - отправка файла;
+    getUpdates() - получение новых сообщений;
+    setLast_message_time() - установка времени последнего сообзения;
+    setdiaologs_list() - установка списка диалогов;
+    setDialogid() - установка айди открытого чата;
+    search_bydep() - поиск по отделу;
+    addit_info() - дополнительная информация о сотруднике;
+    find_employee() - поиск сотрудников по фамилии;
+    open_chat() - открытие чата;
+    list_of_employees() - список всех сотрудников;
+    filling_1tab() - заполнение первой вкладки;
+    filling_2tab() - заполнение второй вкладки;
+    filling_depnum() - заполнение списка отделов;
+    filling_3tab() - заполнение третьей вкладки;
+    send_message() - отправка сообщения;
+    get_history() - получение истории сообщений;
+    output_messages() - вывод сообщений;
+    
+"""
 class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
     def __init__(self, user_id):
         super().__init__()
@@ -278,6 +340,21 @@ class MessengerMainApp(QtWidgets.QMainWindow, main_form.Ui_MainWindow):
                 self.listWidget_chat.scrollToBottom()
 
 
+"""
+FormChangeInfo() - класс для работы с формой редактирования личной информации.
+Формальные параметры:
+    main - объект основного класса;
+    personal_info - персональная информация;
+    id - айди пользователя.
+Назначение поля класса:
+    server - ссылка на сервер;
+    personal_info - персональная информация;
+    new_info - новая информация.
+Назначения методов класса:
+    filling() - заполнение полей;
+    save_new_info() - сохранение новой информации.
+
+"""
 class FormChangeInfo(QtWidgets.QDialog, changeinfo.Ui_Dialog):
     def __init__(self, main, personal_info, id):
         super().__init__()
@@ -317,6 +394,16 @@ class FormChangeInfo(QtWidgets.QDialog, changeinfo.Ui_Dialog):
             QtWidgets.QMessageBox.critical(self, 'Ошибка', 'Произошла ошибка\nпопробуйте еще раз')
 
 
+"""
+ChangePassword() - класс для работы с формой изменения пароля.
+Формальный параметр:
+    id - айди пользователя.
+Назначение поля класса:
+    server - ссылка на сервер;
+    new - новый пароль.
+Назначение метода класса:
+    save_new_pass() - сохранение нового пароля.
+"""
 class ChangePassword(QtWidgets.QDialog, changepass_form.Ui_Dialog):
     def __init__(self, id):
         super().__init__()
@@ -343,11 +430,23 @@ class ChangePassword(QtWidgets.QDialog, changepass_form.Ui_Dialog):
             self.lineEdit_newpass2.clear()
 
 
+"""
+DialogInfo() - класс для работы с формой дополнительной информации о сотруднике.
+Формальный параметр:
+    main - объект основного класса;
+    employee - информация о выбранном сотруднике.
+Назначение поля класса:
+    main - объект основного класса;
+    employee - информация о выбранном сотруднике;
+    fio - ФИО сотрудника.
+Назначение метода класса:
+    openchat() - сохранение нового пароля.
+"""
 class DialogInfo(QtWidgets.QDialog, dialog.Ui_Dialog):
     def __init__(self, main, employee):
         super().__init__()
         self.main = main
-        self.setupUi(self)  # Это нужно для инициализации нашего дизайна
+        self.setupUi(self)
         self.employee = employee
         self.fio = f"{employee['surname']} {employee['name']} {employee['patronymic']}"
         self.lbl_FIO.setText(self.fio)
@@ -372,8 +471,8 @@ class DialogInfo(QtWidgets.QDialog, dialog.Ui_Dialog):
         self.close()
 
 
-if __name__ == '__main__':  # Если мы запускаем файл напрямую, а не импортируем
-    app = QtWidgets.QApplication(sys.argv)  # Новый экземпляр QApplication
-    window = MessengerApp()  # Создаём объект класса ExampleApp
-    window.show()  # Показываем окно
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    window = MessengerApp()
+    window.show()
     app.exec_()
